@@ -126,12 +126,47 @@
             padding-bottom: 0.5rem;
         }
 
+        /* ==================== Qidiruv va Toolbar ==================== */
         .toolbar {
             display: flex;
-            gap: 0.5rem;
+            gap: 1rem;
             margin-bottom: 1rem;
             flex-wrap: wrap;
             align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
+            font-size: 1rem;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--surface);
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-wrapper input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(45, 164, 78, 0.2);
         }
 
         button.action-btn {
@@ -147,6 +182,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
         }
 
         button.action-btn:hover { background: var(--accent-hover); }
@@ -162,6 +198,7 @@
             min-height: 1.5rem;
         }
 
+        /* ==================== Fayl ro'yxati ==================== */
         #fileList {
             list-style: none;
             padding: 0;
@@ -191,7 +228,7 @@
 
         #fileList li a:hover { background: var(--hover); }
 
-        #fileList li a i {
+        #fileList li a i.file-type-icon {
             font-size: 1.2rem;
             color: var(--file-icon);
             width: 24px;
@@ -286,6 +323,12 @@
         <h1><i class="fa-solid fa-folder-open"></i> Arch papkasidagi fayllar</h1>
 
         <div class="toolbar">
+            <!-- Qidiruv input -->
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Fayl nomini qidirish..." disabled>
+            </div>
+
             <button class="action-btn" id="refreshBtn">
                 <i class="fa-solid fa-rotate"></i> Yangilash
             </button>
@@ -306,14 +349,14 @@
            ============================================================ */
         const CONFIG = {
             owner: 'ttnaceri',        // GitHub foydalanuvchi nomingiz
-            repo:  'project',         // Repozitoriya nomi (havola emas, faqat nomi!)
+            repo:  'project',         // Repozitoriya nomi (havola emas!)
             archFolder: 'arch/',      // Fayllar joylashgan papka
             branch: null              // null bo'lsa — default branch avtomatik aniqlanadi
         };
         /* ============================================================ */
 
         /* Agar repozitoriya shaxsiy (private) bo'lsa, tokenni shu yerga qo'ying */
-        const GITHUB_TOKEN = null; // masalan: 'ghp_xxxxxxxxxxxx'
+        const GITHUB_TOKEN = null;
 
         /* ==================== Elementlar ==================== */
         const statusDiv     = document.getElementById('status');
@@ -322,6 +365,10 @@
         const muteBtn       = document.getElementById('muteBtn');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const themeBtn      = document.getElementById('themeBtn');
+        const searchInput   = document.getElementById('searchInput');
+
+        /* ==================== Global o'zgaruvchilar ==================== */
+        let allFiles = []; // Barcha yuklangan fayllar
 
         /* ==================== Mute / Unmute ==================== */
         let isMuted = false;
@@ -419,26 +466,23 @@
         async function fetchArchFiles() {
             const { owner, repo, archFolder, branch } = CONFIG;
 
-            // Oddiy tekshiruv: faqat bo'sh yoki o'zgartirilmaganligini qidiradi
             if (!owner || !repo) {
-                throw new Error('Iltimos, kod ichidagi CONFIG bo\'limida "owner" va "repo" qiymatlarini kiriting.');
+                throw new Error('Iltimos, CONFIG bo\'limida "owner" va "repo" qiymatlarini kiriting.');
             }
 
             const headers = buildHeaders();
-
-            // 1) Default branch'ni aniqlash
             let branchName = branch;
+
             if (!branchName) {
                 const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
                 if (!r.ok) {
-                    if (r.status === 404) throw new Error('Repozitoriya topilmadi. Nomini tekshiring yoki u private bo\'lishi mumkin.');
-                    if (r.status === 403) throw new Error('GitHub API limiti tugadi. Birozdan so\'ng qayta urinib ko\'ring.');
+                    if (r.status === 404) throw new Error('Repozitoriya topilmadi. Nomini tekshiring.');
+                    if (r.status === 403) throw new Error('GitHub API limiti tugadi.');
                     throw new Error(`GitHub API xatosi: ${r.status}`);
                 }
                 branchName = (await r.json()).default_branch;
             }
 
-            // 2) Butun daraxtni olish
             const treeRes = await fetch(
                 `https://api.github.com/repos/${owner}/${repo}/git/trees/${branchName}?recursive=1`,
                 { headers }
@@ -448,7 +492,6 @@
             }
             const treeData = await treeRes.json();
 
-            // 3) Faqat arch/ papkasidagi fayllarni ajratish
             const files = treeData.tree
                 .filter(item => item.type === 'blob' && item.path.startsWith(archFolder))
                 .map(item => ({
@@ -458,7 +501,6 @@
                     sha: item.sha
                 }));
 
-            // 4) Yuklab olish havolalarini yasash
             files.forEach(f => {
                 f.downloadUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branchName}/${f.path}`;
             });
@@ -470,16 +512,16 @@
         function renderFiles(files, branchName) {
             if (files.length === 0) {
                 statusDiv.textContent = '';
-                fileListUl.innerHTML = `<li class="empty">"${CONFIG.archFolder}" papkasida hozircha fayl yo'q.<br>Yangi fayl yuklab, "Yangilash" tugmasini bosing.</li>`;
+                fileListUl.innerHTML = `<li class="empty">"${CONFIG.archFolder}" papkasida hech qanday fayl topilmadi.<br>Yoki qidiruv natijasi bo'sh.</li>`;
                 return;
             }
 
-            statusDiv.textContent = `Jami ${files.length} ta fayl topildi (branch: ${branchName})`;
+            statusDiv.textContent = `Jami ${files.length} ta fayl topildi (branch: ${branchName || 'auto'})`;
 
             fileListUl.innerHTML = files.map(f => `
                 <li>
                     <a href="${f.downloadUrl}" download="${escapeHtml(f.name)}" target="_blank" rel="noopener">
-                        <i class="fa-solid ${fileIcon(f.name)}"></i>
+                        <i class="fa-solid ${fileIcon(f.name)} file-type-icon"></i>
                         <span class="file-info">
                             <span class="file-name">${escapeHtml(f.name)}</span>
                             <span class="file-meta">${formatSize(f.size)}${f.size ? ' • ' : ''}${escapeHtml(f.path)}</span>
@@ -490,15 +532,45 @@
             `).join('');
         }
 
+        /* ==================== Filtrlash (Qidiruv) ==================== */
+        function filterAndRender() {
+            const query = searchInput.value.trim().toLowerCase();
+            
+            if (!query) {
+                // Agar qidiruv bo'sh bo'lsa, hamma fayllarni ko'rsatish
+                renderFiles(allFiles);
+                return;
+            }
+
+            // Fayl nomi bo'yicha filtrlaymiz
+            const filteredFiles = allFiles.filter(f => 
+                f.name.toLowerCase().includes(query)
+            );
+
+            renderFiles(filteredFiles);
+        }
+
+        // Qidiruv maydoniga yozilganda darhol ishlaydi
+        searchInput.addEventListener('input', filterAndRender);
+
         /* ==================== Yuklash ==================== */
         async function loadFiles() {
             refreshBtn.disabled = true;
+            searchInput.disabled = true;
             statusDiv.innerHTML = '<i class="fa-solid fa-spinner spinner"></i> Yuklanmoqda...';
             fileListUl.innerHTML = '';
 
             try {
                 const { files, branchName } = await fetchArchFiles();
-                renderFiles(files, branchName);
+                allFiles = files; // Global o'zgaruvchiga saqlaymiz
+                
+                // Qidiruv maydonini yoqamiz
+                searchInput.disabled = false;
+                
+                // Qidiruv maydonini tozalaymiz va hamma fayllarni ko'rsatamiz
+                searchInput.value = '';
+                renderFiles(allFiles, branchName);
+
             } catch (err) {
                 statusDiv.innerHTML = `<span class="error">Xatolik: ${escapeHtml(err.message)}</span>`;
                 fileListUl.innerHTML = '';
@@ -517,7 +589,6 @@
         /* ==================== Ishga tushirish ==================== */
         refreshBtn.addEventListener('click', loadFiles);
 
-        // Sahifa ochilganda avtomatik yuklash
         window.addEventListener('DOMContentLoaded', loadFiles);
     </script>
 </body>
