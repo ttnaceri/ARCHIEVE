@@ -302,11 +302,11 @@
 
     <script>
         /* ============================================================
-           ⚙️  SOZLAMALAR — faqat shu yerni o'zgartiring!
+           ⚙️  SOZLAMALAR
            ============================================================ */
         const CONFIG = {
-            owner: 'ttnaceri',   // GitHub foydalanuvchi nomingiz
-            repo:  'https://ttnaceri.github.io/project/',  // Repozitoriya nomi
+            owner: 'ttnaceri',        // GitHub foydalanuvchi nomingiz
+            repo:  'project',         // Repozitoriya nomi (havola emas, faqat nomi!)
             archFolder: 'arch/',      // Fayllar joylashgan papka
             branch: null              // null bo'lsa — default branch avtomatik aniqlanadi
         };
@@ -406,16 +406,6 @@
             return `${bytes.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
         }
 
-        /* ==================== Sanani formatlash ==================== */
-        function formatDate(iso) {
-            if (!iso) return '';
-            const d = new Date(iso);
-            return d.toLocaleDateString('uz-UZ', {
-                year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
-        }
-
         /* ==================== GitHub'dan fayllarni olish ==================== */
         function buildHeaders() {
             const h = {
@@ -429,18 +419,19 @@
         async function fetchArchFiles() {
             const { owner, repo, archFolder, branch } = CONFIG;
 
-            if (!owner || owner === 'ttnaceri' || !repo || repo === 'https://ttnaceri.github.io/project/') {
-                throw new Error('Iltimos, kod ichidagi CONFIG bo\'limida "owner" va "repo" qiymatlarini o\'zgartiring.');
+            // Oddiy tekshiruv: faqat bo'sh yoki o'zgartirilmaganligini qidiradi
+            if (!owner || !repo) {
+                throw new Error('Iltimos, kod ichidagi CONFIG bo\'limida "owner" va "repo" qiymatlarini kiriting.');
             }
 
             const headers = buildHeaders();
 
-            // 1) Default branch'ni aniqlash (agar CONFIG.branch null bo'lsa)
+            // 1) Default branch'ni aniqlash
             let branchName = branch;
             if (!branchName) {
                 const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
                 if (!r.ok) {
-                    if (r.status === 404) throw new Error('Repozitoriya topilmadi. CONFIG sozlamalarini tekshiring.');
+                    if (r.status === 404) throw new Error('Repozitoriya topilmadi. Nomini tekshiring yoki u private bo\'lishi mumkin.');
                     if (r.status === 403) throw new Error('GitHub API limiti tugadi. Birozdan so\'ng qayta urinib ko\'ring.');
                     throw new Error(`GitHub API xatosi: ${r.status}`);
                 }
@@ -467,8 +458,7 @@
                     sha: item.sha
                 }));
 
-            // 4) Har bir fayl uchun yuklab olish havolasini yasash
-            //    raw.githubusercontent.com orqali to'g'ridan-to'g'ri yuklab olish mumkin
+            // 4) Yuklab olish havolalarini yasash
             files.forEach(f => {
                 f.downloadUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branchName}/${f.path}`;
             });
