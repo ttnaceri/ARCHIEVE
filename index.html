@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arch fayllari</title>
+
+    <!-- Font Awesome 6 (cdnjs) -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        /* ==================== Rang mavzulari ==================== */
+        :root {
+            --bg: #f6f8fa;
+            --surface: #ffffff;
+            --text: #24292f;
+            --muted: #57606a;
+            --border: #d0d7de;
+            --hover: #f6f8fa;
+            --accent: #2da44e;
+            --accent-hover: #2c974b;
+            --accent-disabled: #94d3a2;
+            --error-text: #cf222e;
+            --error-bg: #ffebe9;
+            --error-border: #ff8182;
+            --header-bg: rgba(255,255,255,0.9);
+            --file-icon: #0969da;
+        }
+
+        body.dark {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --border: #30363d;
+            --hover: #21262d;
+            --accent: #238636;
+            --accent-hover: #2ea043;
+            --accent-disabled: #2ea04366;
+            --error-text: #ff7b72;
+            --error-bg: #3d1418;
+            --error-border: #f85149;
+            --header-bg: rgba(13,17,23,0.9);
+            --file-icon: #58a6ff;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* ==================== Header ==================== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 0 1.5rem;
+            background: var(--header-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, border-color 0.2s;
+        }
+
+        .icon-btn:hover { background: var(--hover); }
+        .icon-btn:active { transform: scale(0.94); }
+        .icon-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* ==================== Konteyner ==================== */
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-top: 56px;
+            height: fit-content;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button.action-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.action-btn:hover { background: var(--accent-hover); }
+        button.action-btn:disabled {
+            background: var(--accent-disabled);
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin: 0.5rem 0 1rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+            min-height: 1.5rem;
+        }
+
+        #fileList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #fileList li {
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        #fileList li:last-child { border-bottom: none; }
+
+        #fileList li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem 1rem;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+
+        #fileList li a:hover { background: var(--hover); }
+
+        #fileList li a i {
+            font-size: 1.2rem;
+            color: var(--file-icon);
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .file-name {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .file-download {
+            font-size: 0.9rem;
+            color: var(--muted);
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        #fileList li a:hover .file-download { opacity: 1; }
+
+        .empty {
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .error {
+            color: var(--error-text);
+            background: var(--error-bg);
+            padding: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--error-border);
+        }
+
+        .note {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 1rem;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== Header ==================== -->
+    <header>
+        <button class="icon-btn" id="muteBtn" title="Mute / Unmute">
+            <i class="fa-solid fa-volume-high"></i>
+        </button>
+        <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">
+            <i class="fa-solid fa-expand"></i>
+        </button>
+        <button class="icon-btn" id="themeBtn" title="Black / White background">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </header>
+
+    <!-- ==================== Asosiy qism ==================== -->
+    <div class="container">
+        <h1><i class="fa-solid fa-folder-open"></i> Arch papkasidagi fayllar</h1>
+
+        <div class="toolbar">
+            <button class="action-btn" id="refreshBtn">
+                <i class="fa-solid fa-rotate"></i> Yangilash
+            </button>
+        </div>
+
+        <div id="status">Yuklanmoqda...</div>
+        <ul id="fileList"></ul>
+
+        <div class="note">
+            <strong>Qanday ishlatiladi:</strong> Yangi faylni repozitoriyangizdagi <code>arch/</code> papkasiga yuklang,
+            so'ng <strong>Yangilash</strong> tugmasini bosing — fayl ro'yxatda paydo bo'ladi. Har bir faylni bosib yuklab olishingiz mumkin.
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================
+           ⚙️  SOZLAMALAR — faqat shu yerni o'zgartiring!
+           ============================================================ */
+        const CONFIG = {
+            owner: 'ttnaceri',   // GitHub foydalanuvchi nomingiz
+            repo:  'https://ttnaceri.github.io/project/',  // Repozitoriya nomi
+            archFolder: 'arch/',      // Fayllar joylashgan papka
+            branch: null              // null bo'lsa — default branch avtomatik aniqlanadi
+        };
+        /* ============================================================ */
+
+        /* Agar repozitoriya shaxsiy (private) bo'lsa, tokenni shu yerga qo'ying */
+        const GITHUB_TOKEN = null; // masalan: 'ghp_xxxxxxxxxxxx'
+
+        /* ==================== Elementlar ==================== */
+        const statusDiv     = document.getElementById('status');
+        const fileListUl    = document.getElementById('fileList');
+        const refreshBtn    = document.getElementById('refreshBtn');
+        const muteBtn       = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const themeBtn      = document.getElementById('themeBtn');
+
+        /* ==================== Mute / Unmute ==================== */
+        let isMuted = false;
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            const icon = muteBtn.querySelector('i');
+            icon.className = isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            muteBtn.classList.toggle('active', isMuted);
+            muteBtn.title = isMuted ? 'Unmute' : 'Mute';
+        });
+
+        /* ==================== Fullscreen ==================== */
+        fullscreenBtn.addEventListener('click', async () => {
+            try {
+                if (!document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen();
+                } else {
+                    await document.exitFullscreen();
+                }
+            } catch (err) {
+                console.warn('Fullscreen xatosi:', err.message);
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = fullscreenBtn.querySelector('i');
+            if (document.fullscreenElement) {
+                icon.className = 'fa-solid fa-compress';
+                fullscreenBtn.title = 'Exit fullscreen';
+                fullscreenBtn.classList.add('active');
+            } else {
+                icon.className = 'fa-solid fa-expand';
+                fullscreenBtn.title = 'Fullscreen';
+                fullscreenBtn.classList.remove('active');
+            }
+        });
+
+        /* ==================== Black / White background ==================== */
+        if (localStorage.getItem('arch-viewer-theme') === 'dark') {
+            document.body.classList.add('dark');
+            themeBtn.querySelector('i').className = 'fa-solid fa-sun';
+            themeBtn.classList.add('active');
+        }
+
+        themeBtn.addEventListener('click', () => {
+            const isDark = document.body.classList.toggle('dark');
+            const icon = themeBtn.querySelector('i');
+            icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            themeBtn.classList.toggle('active', isDark);
+            localStorage.setItem('arch-viewer-theme', isDark ? 'dark' : 'light');
+        });
+
+        /* ==================== Fayl turi ikonkasi ==================== */
+        function fileIcon(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            const map = {
+                pptx: 'fa-file-powerpoint', ppt: 'fa-file-powerpoint',
+                docx: 'fa-file-word', doc: 'fa-file-word',
+                xlsx: 'fa-file-excel', xls: 'fa-file-excel',
+                pdf:  'fa-file-pdf',
+                zip:  'fa-file-zipper', rar: 'fa-file-zipper', '7z': 'fa-file-zipper',
+                png:  'fa-file-image', jpg: 'fa-file-image', jpeg: 'fa-file-image',
+                      gif: 'fa-file-image', svg: 'fa-file-image', webp: 'fa-file-image',
+                mp4:  'fa-file-video', mov: 'fa-file-video', avi: 'fa-file-video',
+                mp3:  'fa-file-audio', wav: 'fa-file-audio',
+                js:   'fa-file-code', ts: 'fa-file-code', html: 'fa-file-code',
+                css:  'fa-file-code', json: 'fa-file-code', py: 'fa-file-code',
+                md:   'fa-file-lines', txt: 'fa-file-lines',
+            };
+            return map[ext] || 'fa-file';
+        }
+
+        /* ==================== Fayl hajmini formatlash ==================== */
+        function formatSize(bytes) {
+            if (!bytes && bytes !== 0) return '';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let i = 0;
+            while (bytes >= 1024 && i < units.length - 1) {
+                bytes /= 1024;
+                i++;
+            }
+            return `${bytes.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+        }
+
+        /* ==================== Sanani formatlash ==================== */
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('uz-UZ', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        /* ==================== GitHub'dan fayllarni olish ==================== */
+        function buildHeaders() {
+            const h = {
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+            };
+            if (GITHUB_TOKEN) h['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+            return h;
+        }
+
+        async function fetchArchFiles() {
+            const { owner, repo, archFolder, branch } = CONFIG;
+
+            if (!owner || owner === 'ttnaceri' || !repo || repo === 'https://ttnaceri.github.io/project/') {
+                throw new Error('Iltimos, kod ichidagi CONFIG bo\'limida "owner" va "repo" qiymatlarini o\'zgartiring.');
+            }
+
+            const headers = buildHeaders();
+
+            // 1) Default branch'ni aniqlash (agar CONFIG.branch null bo'lsa)
+            let branchName = branch;
+            if (!branchName) {
+                const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+                if (!r.ok) {
+                    if (r.status === 404) throw new Error('Repozitoriya topilmadi. CONFIG sozlamalarini tekshiring.');
+                    if (r.status === 403) throw new Error('GitHub API limiti tugadi. Birozdan so\'ng qayta urinib ko\'ring.');
+                    throw new Error(`GitHub API xatosi: ${r.status}`);
+                }
+                branchName = (await r.json()).default_branch;
+            }
+
+            // 2) Butun daraxtni olish
+            const treeRes = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/git/trees/${branchName}?recursive=1`,
+                { headers }
+            );
+            if (!treeRes.ok) {
+                throw new Error(`Fayllar ro'yxatini olishda xatolik: ${treeRes.status}`);
+            }
+            const treeData = await treeRes.json();
+
+            // 3) Faqat arch/ papkasidagi fayllarni ajratish
+            const files = treeData.tree
+                .filter(item => item.type === 'blob' && item.path.startsWith(archFolder))
+                .map(item => ({
+                    path: item.path,
+                    name: item.path.slice(archFolder.length),
+                    size: item.size,
+                    sha: item.sha
+                }));
+
+            // 4) Har bir fayl uchun yuklab olish havolasini yasash
+            //    raw.githubusercontent.com orqali to'g'ridan-to'g'ri yuklab olish mumkin
+            files.forEach(f => {
+                f.downloadUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branchName}/${f.path}`;
+            });
+
+            return { files, branchName };
+        }
+
+        /* ==================== Ro'yxatni chizish ==================== */
+        function renderFiles(files, branchName) {
+            if (files.length === 0) {
+                statusDiv.textContent = '';
+                fileListUl.innerHTML = `<li class="empty">"${CONFIG.archFolder}" papkasida hozircha fayl yo'q.<br>Yangi fayl yuklab, "Yangilash" tugmasini bosing.</li>`;
+                return;
+            }
+
+            statusDiv.textContent = `Jami ${files.length} ta fayl topildi (branch: ${branchName})`;
+
+            fileListUl.innerHTML = files.map(f => `
+                <li>
+                    <a href="${f.downloadUrl}" download="${escapeHtml(f.name)}" target="_blank" rel="noopener">
+                        <i class="fa-solid ${fileIcon(f.name)}"></i>
+                        <span class="file-info">
+                            <span class="file-name">${escapeHtml(f.name)}</span>
+                            <span class="file-meta">${formatSize(f.size)}${f.size ? ' • ' : ''}${escapeHtml(f.path)}</span>
+                        </span>
+                        <i class="fa-solid fa-download file-download"></i>
+                    </a>
+                </li>
+            `).join('');
+        }
+
+        /* ==================== Yuklash ==================== */
+        async function loadFiles() {
+            refreshBtn.disabled = true;
+            statusDiv.innerHTML = '<i class="fa-solid fa-spinner spinner"></i> Yuklanmoqda...';
+            fileListUl.innerHTML = '';
+
+            try {
+                const { files, branchName } = await fetchArchFiles();
+                renderFiles(files, branchName);
+            } catch (err) {
+                statusDiv.innerHTML = `<span class="error">Xatolik: ${escapeHtml(err.message)}</span>`;
+                fileListUl.innerHTML = '';
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        /* ==================== Yordamchi ==================== */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /* ==================== Ishga tushirish ==================== */
+        refreshBtn.addEventListener('click', loadFiles);
+
+        // Sahifa ochilganda avtomatik yuklash
+        window.addEventListener('DOMContentLoaded', loadFiles);
+    </script>
+</body>
+</html>
